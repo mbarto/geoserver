@@ -391,7 +391,7 @@ public class KvpUtils {
      * 
      * @return A list of errors that occured.
      */
-    public static List<Throwable> parse(Map kvp, String service, String request, String version) {
+    public static List<Throwable> parse(Map kvp, String service, String version, String request) {
         // look up parser objects
         List<KvpParser> parsers = GeoServerExtensions.extensions(KvpParser.class);
         

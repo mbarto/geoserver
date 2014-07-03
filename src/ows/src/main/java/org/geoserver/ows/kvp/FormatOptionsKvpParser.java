@@ -69,8 +69,8 @@ public class FormatOptionsKvpParser extends KvpParser implements ApplicationCont
         // we use service, request, version info for this parser (if available)
         // to restrict the parsers list used for options parsing (see GEOS-6555)
         List<Throwable> errors = KvpUtils
-                .parse(formatOptions, getService(), getRequest(),
-                        getVersion() == null ? null : getVersion().toString());
+                .parse(formatOptions, getService(), getVersion() == null ? null
+                        : getVersion().toString(), getRequest());
         
         if(errors != null && errors.size() > 0) {
             throw new Exception(errors.get(0));

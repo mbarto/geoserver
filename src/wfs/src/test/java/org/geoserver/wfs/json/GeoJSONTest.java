@@ -112,7 +112,7 @@ public class GeoJSONTest extends WFSTestSupport {
 
     @Test
     public void testGetJsonIdPolicyTrue() throws Exception {    
-        MockHttpServletResponse response = getAsServletResponse("wfs?request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="+JSONType.simple_json+"&format_options=" + JSONType.ID_POLICY+":true");
+        MockHttpServletResponse response = getAsServletResponse("wfs?service=wfs&request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="+JSONType.simple_json+"&format_options=" + JSONType.ID_POLICY+":true");
         assertEquals("application/json", response.getContentType());
         String out = response.getOutputStreamContent();
         
@@ -128,7 +128,7 @@ public class GeoJSONTest extends WFSTestSupport {
     }
     @Test
     public void testGetJsonIdPolicyFalse() throws Exception {    
-        MockHttpServletResponse response = getAsServletResponse("wfs?request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="+JSONType.simple_json+"&format_options=" + JSONType.ID_POLICY+":false");
+        MockHttpServletResponse response = getAsServletResponse("wfs?service=wfs&request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="+JSONType.simple_json+"&format_options=" + JSONType.ID_POLICY+":false");
         assertEquals("application/json", response.getContentType());
         String out = response.getOutputStreamContent();
         
@@ -142,7 +142,7 @@ public class GeoJSONTest extends WFSTestSupport {
 
     @Test
     public void testGetJsonIdPolicyAttribute() throws Exception {    
-        MockHttpServletResponse response = getAsServletResponse("wfs?request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="+JSONType.simple_json+"&format_options=" + JSONType.ID_POLICY+":name");
+        MockHttpServletResponse response = getAsServletResponse("wfs?service=wfs&request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="+JSONType.simple_json+"&format_options=" + JSONType.ID_POLICY+":name");
         assertEquals("application/json", response.getContentType());
         String out = response.getOutputStreamContent();
         
@@ -231,7 +231,7 @@ public class GeoJSONTest extends WFSTestSupport {
     @Test
     public void testCallbackFunction() throws Exception {
         JSONType.setJsonpEnabled(true);
-        MockHttpServletResponse resp = getAsServletResponse("wfs?request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="
+        MockHttpServletResponse resp = getAsServletResponse("wfs?service=wfs&request=GetFeature&version=1.0.0&typename=sf:PrimitiveGeoFeature&maxfeatures=1&outputformat="
                 + JSONType.jsonp + "&format_options=" + JSONType.CALLBACK_FUNCTION_KEY + ":myFunc");
         JSONType.setJsonpEnabled(false);
         String out = resp.getOutputStreamContent();
