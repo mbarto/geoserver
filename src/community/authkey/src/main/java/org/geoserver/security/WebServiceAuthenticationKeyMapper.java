@@ -10,13 +10,14 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.geoserver.ows.kvp.FormatOptionsKvpParser;
 import org.geoserver.security.impl.GeoServerUser;
+import org.geotools.data.ows.HTTPClient;
 import org.geotools.data.ows.HTTPResponse;
 import org.geotools.data.ows.SimpleHttpClient;
 import org.springframework.util.StringUtils;
@@ -33,12 +34,14 @@ import org.springframework.util.StringUtils;
  */
 public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKeyMapper {
 
-
+    FormatOptionsKvpParser parser = new FormatOptionsKvpParser();
 
     
     private String webServiceUrl;
-    private String searchUser;
+    private String searchUser = "^\\s*(.*)\\s*$";
     Pattern searchUserRegex = null;
+    
+    private HTTPClient httpClient = null;
     
     
     
@@ -47,6 +50,12 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
         
     }
 
+    private HTTPClient getHttpClient() {
+        if(httpClient == null) {
+            httpClient = new SimpleHttpClient();
+        }
+        return httpClient;
+    }
    
     public String getWebServiceUrl() {
         return webServiceUrl;
@@ -63,6 +72,10 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
     public void setSearchUser(String searchUser) {
         this.searchUser = searchUser;
         searchUserRegex = Pattern.compile(searchUser);
+    }
+    
+    public void setHttpClient(HTTPClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     @Override
@@ -95,7 +108,7 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
 
     private String callWebService(String key) {
         String url = webServiceUrl.replace("{key}", key);
-        SimpleHttpClient client = new SimpleHttpClient();
+        HTTPClient client = getHttpClient();
         client.setConnectTimeout(5);
         client.setReadTimeout(10);
         try {
@@ -130,6 +143,24 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
         return null;
     }
 
+    public void setParameters(String parameters) {
+        if(parameters != null && ! "".equals(parameters)) {
+            try {
+                Map mapperParams = (Map)parser.parse(parameters);
+                if(mapperParams != null) {
+                    if(mapperParams.containsKey("webServiceUrl")) {
+                        webServiceUrl = (String)mapperParams.get("webServiceUrl");
+                    }
+                    if(mapperParams.containsKey("searchUser")) {
+                        searchUser = (String)mapperParams.get("searchUser");
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "WebServiceAuthenticationKeyMapper parameters parsing error", e);
+            }
+        }
+    }
+    
     @Override
     synchronized public int synchronize() throws IOException {
         checkProperties();

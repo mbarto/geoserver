@@ -6,12 +6,16 @@ package org.geoserver.security;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -20,10 +24,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.security.auth.AbstractAuthenticationProviderTest;
 import org.geoserver.security.impl.GeoServerUser;
+import org.geoserver.test.http.AbstractHttpClient;
+import org.geotools.data.ows.HTTPResponse;
 import org.junit.Test;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 import com.mockrunner.mock.web.MockFilterChain;
@@ -251,6 +258,84 @@ public class AuthKeyAuthenticationTest extends AbstractAuthenticationProviderTes
         // Anonymous context is not stored in http session, no further testing
         removeAnonymousFilter();
 
+    }
+    
+    @Test
+    public void testWebServiceAutheKeyMapper() throws Exception {
+        GeoServerUserGroupService ugservice = createUserGroupService("testWebServiceAuthKey");
+        GeoServerUserGroupStore ugstore = ugservice.createStore();
+        GeoServerUser u1 = ugstore.createUserObject("user1", "passwd1", true);
+        ugstore.addUser(u1);
+        GeoServerUser u2 = ugstore.createUserObject("user2", "passwd2", true);
+        ugstore.addUser(u2);
+        ugstore.store();
+        
+        WebServiceAuthenticationKeyMapper propMapper =
+                GeoServerExtensions.extensions(WebServiceAuthenticationKeyMapper.class).iterator().next();
+        propMapper.setUserGroupServiceName("testWebServiceAuthKey");
+        propMapper.setSecurityManager(getSecurityManager());
+        propMapper.setParameters("webServiceUrl:http://service/{key}");
+        propMapper.setHttpClient(new AbstractHttpClient() {
+
+            @Override
+            public HTTPResponse get(final URL url) throws IOException {
+                
+                    return new HTTPResponse() {
+                        
+                        @Override
+                        public InputStream getResponseStream() throws IOException {
+                            if(url.getPath().substring(1).equals("testkey")) {
+                                return new ByteArrayInputStream(new String("user1").getBytes());
+                            }
+                            return new ByteArrayInputStream(new String("").getBytes());
+                        }
+                        
+                        @Override
+                        public String getResponseHeader(String arg0) {
+                            // TODO Auto-generated method stub
+                            return null;
+                        }
+                        
+                        @Override
+                        public String getResponseCharset() {
+                            // TODO Auto-generated method stub
+                            return null;
+                        }
+                        
+                        @Override
+                        public String getContentType() {
+                            // TODO Auto-generated method stub
+                            return null;
+                        }
+                        
+                        @Override
+                        public void dispose() {
+                            // TODO Auto-generated method stub
+                            
+                        }
+                        
+                    };
+                    
+                
+            }
+
+            @Override
+            public HTTPResponse post(URL url, InputStream in, String arg)
+                    throws IOException {
+                return null;
+            }
+            
+        });
+        GeoServerUser user = propMapper.getUser("testkey");
+        assertNotNull(user);
+        assertEquals(user.getUsername(), "user1");
+        boolean error = false;
+        try {
+            user = propMapper.getUser("wrongkey");
+        } catch(UsernameNotFoundException e) {
+            error = true;
+        }
+        assertTrue(error);
     }
 
     @Test

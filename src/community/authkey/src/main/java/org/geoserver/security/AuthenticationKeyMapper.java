@@ -56,6 +56,7 @@ public interface AuthenticationKeyMapper extends BeanNameAware {
     
     public GeoServerSecurityManager getSecurityManager();
     public void setSecurityManager(GeoServerSecurityManager securityManager);
+    public void setParameters(String parameters);
     
 
 }
