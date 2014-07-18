@@ -41,6 +41,9 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
     private String searchUser = "^\\s*(.*)\\s*$";
     Pattern searchUserRegex = null;
     
+    int connectTimeout = 5;
+    int readTimeout = 10;
+    
     private HTTPClient httpClient = null;
     
     
@@ -109,8 +112,9 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
     private String callWebService(String key) {
         String url = webServiceUrl.replace("{key}", key);
         HTTPClient client = getHttpClient();
-        client.setConnectTimeout(5);
-        client.setReadTimeout(10);
+        
+        client.setConnectTimeout(connectTimeout);
+        client.setReadTimeout(readTimeout);
         try {
             HTTPResponse response = client.get(new URL(url));
             BufferedReader reader = null;
@@ -153,6 +157,20 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
                     }
                     if(mapperParams.containsKey("searchUser")) {
                         searchUser = (String)mapperParams.get("searchUser");
+                    }
+                    if(mapperParams.containsKey("connectTimeout")) {
+                        try {
+                            connectTimeout = Integer.parseInt((String)mapperParams.get("connectTimeout"));
+                        } catch(NumberFormatException e) {
+                            LOGGER.log(Level.SEVERE, "WebServiceAuthenticationKeyMapper connectTimeout wrong format", e);
+                        }
+                    }
+                    if(mapperParams.containsKey("readTimeout")) {
+                        try {
+                            readTimeout = Integer.parseInt((String)mapperParams.get("readTimeout"));
+                        } catch(NumberFormatException e) {
+                            LOGGER.log(Level.SEVERE, "WebServiceAuthenticationKeyMapper readTimeout wrong format", e);
+                        }
                     }
                 }
             } catch (Exception e) {
