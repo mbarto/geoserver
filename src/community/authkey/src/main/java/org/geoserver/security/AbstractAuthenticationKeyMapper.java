@@ -76,4 +76,8 @@ public abstract class AbstractAuthenticationKeyMapper implements AuthenticationK
     protected String createAuthKey() {
         return UUID.randomUUID().toString();
     }
+    
+    public void setParameters(String parameters) {
+        
+    }
 }

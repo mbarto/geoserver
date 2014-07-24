@@ -55,6 +55,7 @@ public class AuthenticationKeyFilterPanel
         
         add(new TextField<String>("authKeyParamName"));
         add(new AuthenticationKeyMapperChoice("authKeyMapperName"));
+        add(new TextField<String>("authKeyMapperParams"));
         add(new UserGroupServiceChoice("userGroupServiceName"));
 
         
@@ -69,6 +70,7 @@ public class AuthenticationKeyFilterPanel
                     AuthenticationKeyMapper mapper = (AuthenticationKeyMapper) GeoServerExtensions.bean(config.getAuthKeyMapperName());
                     mapper.setSecurityManager(getSecurityManager());
                     mapper.setUserGroupServiceName(config.getUserGroupServiceName());
+                    mapper.setParameters(config.getAuthKeyMapperParams());
                     int numberOfNewKeys=mapper.synchronize();
                     info(new StringResourceModel("synchronizeSuccessful",AuthenticationKeyFilterPanel.this, null,new Object[] {numberOfNewKeys}).getObject());
                 }

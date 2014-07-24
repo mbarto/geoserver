@@ -14,6 +14,9 @@ import org.geoserver.security.config.SecurityFilterConfig;
  * is {@link KeyAuthenticationToken#DEFAULT_URL_PARAM}
  * 
  * {@link #authKeyMapperName} is the bean name of an {@link AuthenticationKeyMapper} implementation.
+ * 
+ * {@link #authKeyMapperParams} is an optional encoded set of parameters (the encoding is like 
+ * format_options one) for the key mapper.
  *
  * @author mcr
  */
@@ -22,6 +25,7 @@ public class AuthenticationKeyFilterConfig extends SecurityFilterConfig
 
     private static final long serialVersionUID = 1L;
     private String authKeyMapperName;
+    private String authKeyMapperParams;
     private String authKeyParamName = KeyAuthenticationToken.DEFAULT_URL_PARAM;
     private String userGroupServiceName;
     
@@ -47,6 +51,14 @@ public class AuthenticationKeyFilterConfig extends SecurityFilterConfig
         this.authKeyParamName = authKeyParamName;
     }
     
+    public String getAuthKeyMapperParams() {
+        return authKeyMapperParams;
+    }
+
+    public void setAuthKeyMapperParams(String authKeyMapperParams) {
+        this.authKeyMapperParams = authKeyMapperParams;
+    }
+
     public String getUserGroupServiceName() {
         return userGroupServiceName;
     }
