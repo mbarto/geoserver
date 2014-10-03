@@ -6,6 +6,8 @@
 package org.geoserver.security;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
 
 import org.geoserver.security.impl.GeoServerUser;
 import org.springframework.beans.factory.BeanNameAware;
@@ -58,5 +60,19 @@ public interface AuthenticationKeyMapper extends BeanNameAware {
     public GeoServerSecurityManager getSecurityManager();
     public void setSecurityManager(GeoServerSecurityManager securityManager);
     
-
+    /**
+     * Returns the list of configuration parameters supported by this mapper.
+     * 
+     * @return
+     */
+    public Set<String> getAvailableParameters();
+    
+    /**
+     * Configures the mapper parameters.
+     * 
+     * @param parameters
+     */
+    public void configureMapper(Map<String, String> parameters);
+    
+    public Map<String, String> getMapperConfiguration();
 }

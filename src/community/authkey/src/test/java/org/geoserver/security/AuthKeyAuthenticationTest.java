@@ -5,14 +5,19 @@
  */
 package org.geoserver.security;
 
+import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -21,7 +26,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.security.auth.AbstractAuthenticationProviderTest;
 import org.geoserver.security.impl.GeoServerUser;
+import org.geoserver.security.validation.FilterConfigException;
+import org.geoserver.security.xml.XMLUserGroupService;
 import org.junit.Test;
+import org.springframework.context.ApplicationContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,6 +49,73 @@ public class AuthKeyAuthenticationTest extends AbstractAuthenticationProviderTes
 
     }
 
+    @Test
+    public void testMapperParameters() throws Exception {
+        String authKeyUrlParam = "myAuthKeyParams";
+        String filterName = "testAuthKeyParams1";
+        
+        AuthenticationKeyFilterConfig config = new AuthenticationKeyFilterConfig();
+        config.setClassName(GeoServerAuthenticationKeyFilter.class.getName());
+        config.setName(filterName);        
+        config.setUserGroupServiceName("ug1");
+        config.setAuthKeyParamName(authKeyUrlParam);
+        config.setAuthKeyMapperName("fakeMapper");
+        
+        Map<String, String> mapperParams = new HashMap<String, String>();
+        mapperParams.put("param1", "value1");
+        mapperParams.put("param2", "value2");
+        config.setMapperParameters(mapperParams);
+                 
+        getSecurityManager().saveFilter(config);
+        
+        GeoServerAuthenticationKeyFilter filter = 
+                (GeoServerAuthenticationKeyFilter) getSecurityManager().loadFilter(filterName);
+        assertTrue(filter.getMapper() instanceof FakeMapper);
+        FakeMapper fakeMapper = (FakeMapper)filter.getMapper();
+        assertEquals("value1", fakeMapper.getMapperParameter("param1")); 
+        assertEquals("value2", fakeMapper.getMapperParameter("param2"));
+    }
+    
+    @Test
+    public void testMapperParamsFilterConfigValidation() throws Exception {
+
+        AuthenticationKeyFilterConfigValidator validator=new AuthenticationKeyFilterConfigValidator(getSecurityManager());
+        
+        AuthenticationKeyFilterConfig config = new AuthenticationKeyFilterConfig();
+        config.setClassName(GeoServerAuthenticationKeyFilter.class.getName());
+        config.setName("fakeFilter");
+        config.setUserGroupServiceName(XMLUserGroupService.DEFAULT_NAME);
+        config.setAuthKeyParamName("authkey");
+        config.setAuthKeyMapperName("fakeMapper");
+        
+        Map<String, String> mapperParams = new HashMap<String, String>();
+        mapperParams.put("param1", "value1");
+        mapperParams.put("param2", "value2");
+        
+        config.setMapperParameters(mapperParams);
+       
+        boolean failed = false;
+        try {
+            validator.validateFilterConfig(config);
+        } catch (FilterConfigException ex){
+            failed=true;
+        }
+        
+        assertFalse(failed);
+        
+        mapperParams.put("param3", "value3");
+        
+        try {
+            validator.validateFilterConfig(config);
+        } catch (FilterConfigException ex){
+            assertEquals(AuthenticationKeyFilterConfigException.INVALID_AUTH_KEY_MAPPER_PARAMETER_$3, ex.getId());
+            assertEquals(1,ex.getArgs().length);
+            assertEquals("param3",ex.getArgs()[0]);
+            LOGGER.info(ex.getMessage());            
+            failed=true;
+        }
+        assertTrue(failed);
+    }
     
     @Test
     public void testFileBasedWithSession() throws Exception {
@@ -285,7 +360,7 @@ public class AuthKeyAuthenticationTest extends AbstractAuthenticationProviderTes
         assertTrue(authKeyFile.exists());
         
         Properties props = new Properties();
-        props.load(new FileInputStream(authKeyFile));
+        loadPropFile(authKeyFile, props);
         assertEquals(2, props.size());
         
         String user1KeyA=null,user2KeyA=null,user3KeyA=null,
@@ -329,7 +404,7 @@ public class AuthKeyAuthenticationTest extends AbstractAuthenticationProviderTes
         
         
         props = new Properties();
-        props.load(new FileInputStream(authKeyFile));
+        loadPropFile(authKeyFile, props);
         assertEquals(2, props.size());
         
         
@@ -372,6 +447,17 @@ public class AuthKeyAuthenticationTest extends AbstractAuthenticationProviderTes
         
         
 
+    }
+
+
+    private void loadPropFile(File authKeyFile, Properties props)
+            throws FileNotFoundException, IOException {
+        FileInputStream propFile = new FileInputStream(authKeyFile);
+        try {
+            props.load(propFile);
+        } finally {
+            propFile.close();
+        }
     }
 
   

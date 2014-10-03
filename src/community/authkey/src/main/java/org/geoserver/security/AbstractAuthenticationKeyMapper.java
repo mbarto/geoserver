@@ -6,6 +6,11 @@
 package org.geoserver.security;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -28,7 +33,15 @@ public abstract class AbstractAuthenticationKeyMapper implements AuthenticationK
     private String beanName;    
     private String userGroupServiceName;
     private GeoServerSecurityManager securityManager;
+    
+    private Map<String, String> parameters = new HashMap<String, String>();
 
+    
+    
+    public AbstractAuthenticationKeyMapper() {
+        super();
+        fillDefaultParameters();
+    }
 
     @Override
     public void setBeanName(String name) {
@@ -76,5 +89,40 @@ public abstract class AbstractAuthenticationKeyMapper implements AuthenticationK
     
     protected String createAuthKey() {
         return UUID.randomUUID().toString();
+    }
+    
+    /**
+     * Returns the list of configuration parameters supported by the mapper.
+     * 
+     * @return
+     */
+    public Set<String> getAvailableParameters() {
+        return new HashSet<String>();
+    }
+    
+    /**
+     * Configures the mapper parameters.
+     * 
+     * @param parameters
+     */
+    public void configureMapper(Map<String, String> parameters) {
+        this.parameters = parameters;
+        fillDefaultParameters();
+    }
+
+    private void fillDefaultParameters() {
+        for(String paramName : getAvailableParameters()) {
+            if(!this.parameters.containsKey(paramName)) {
+                this.parameters.put(paramName, getDefaultParamValue(paramName));
+            }
+        }
+    }
+    
+    protected String getDefaultParamValue(String paramName) {
+        return "";
+    }
+
+    public Map<String, String> getMapperConfiguration() {
+        return parameters;
     }
 }
