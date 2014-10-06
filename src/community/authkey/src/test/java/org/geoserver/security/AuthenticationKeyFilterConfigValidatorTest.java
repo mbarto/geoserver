@@ -5,12 +5,9 @@
  */
 package org.geoserver.security;
 
-import static org.easymock.EasyMock.expect;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.geoserver.security.validation.FilterConfigException;
@@ -19,7 +16,6 @@ import org.geoserver.test.GeoServerMockTestSupport;
 import org.geotools.util.logging.Logging;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.context.ApplicationContext;
 
 public class AuthenticationKeyFilterConfigValidatorTest extends GeoServerMockTestSupport {
 

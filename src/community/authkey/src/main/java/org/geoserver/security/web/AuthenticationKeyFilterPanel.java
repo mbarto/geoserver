@@ -70,7 +70,7 @@ public class AuthenticationKeyFilterPanel
         add(new TextField<String>("authKeyParamName"));
 
         Map<String, String> parameters = model.getObject().getMapperParameters();
-        final ParamsPanel paramsPanel = createParamsPanel("authKeyMapperParamsPanel", parameters);
+        final ParamsPanel paramsPanel = createParamsPanel("authKeyMapperParamsPanel", model.getObject().getAuthKeyMapperName() ,parameters);
         
         AuthenticationKeyMapperChoice authenticationKeyMapperChoice = new AuthenticationKeyMapperChoice("authKeyMapperName");
         
@@ -79,7 +79,7 @@ public class AuthenticationKeyFilterPanel
                 String newSelection = (String) getFormComponent().getConvertedInput();
                 Map<String, String> parameters = getMapperParameters(newSelection);
                 AuthenticationKeyFilterPanel.this.model.getObject().setMapperParameters(parameters);
-                paramsPanel.updateParameters(parameters);
+                paramsPanel.updateParameters(newSelection, parameters);
                 target.addComponent(paramsPanel);
             }
         });
@@ -121,18 +121,19 @@ public class AuthenticationKeyFilterPanel
 
     class ParamsPanel extends FormComponentPanel {
 
-        public ParamsPanel(String id, Map<String, String> parameters) {
+        public ParamsPanel(String id, String authMapperName, Map<String, String> parameters) {
             super(id, new Model());
-            updateParameters(parameters);
+            updateParameters(authMapperName, parameters);
         }
 
-        private void updateParameters(final Map<String, String> parameters) {
+        private void updateParameters(final String authMapperName, final Map<String, String> parameters) {
             
             removeAll();
             add(new ListView<String>("parametersList", new Model(new ArrayList<String>(parameters.keySet()))) {
                 @Override
                 protected void populateItem(ListItem<String> item) {
-                   item.add(new Label("parameterName", item.getModel().getObject()));
+                   item.add(new Label("parameterName", new StringResourceModel(
+                           "AuthenticationKeyFilterPanel." + authMapperName + "." + item.getModel().getObject(), this, null)));
                    item.add(new TextField<String>("parameterField", new MapModel(parameters, item.getModel().getObject())));
                 }        
                 
@@ -148,8 +149,8 @@ public class AuthenticationKeyFilterPanel
 
         
     
-    private ParamsPanel createParamsPanel(String id, Map<String, String> parameters) {
-        ParamsPanel paramsPanel = new ParamsPanel(id, parameters);
+    private ParamsPanel createParamsPanel(String id, String authKeyMapperName, Map<String, String> parameters) {
+        ParamsPanel paramsPanel = new ParamsPanel(id, authKeyMapperName, parameters);
         paramsPanel.setOutputMarkupId(true);
         return paramsPanel;
     }

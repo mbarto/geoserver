@@ -17,8 +17,10 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.geoserver.security.impl.GeoServerUser;
+import org.geoserver.security.validation.FilterConfigException;
 import org.geotools.data.ows.HTTPClient;
 import org.geotools.data.ows.HTTPResponse;
 import org.geotools.data.ows.SimpleHttpClient;
@@ -36,6 +38,10 @@ import org.springframework.util.StringUtils;
  */
 public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKeyMapper {
     
+    public static final String AUTH_KEY_WEBSERVICE_PLACEHOLDER_REQUIRED ="AUTH_KEY_WEBSERVICE_PLACEHOLDER_REQUIRED";
+    public static final String AUTH_KEY_WEBSERVICE_MALFORMED_REGEX ="AUTH_KEY_WEBSERVICE_MALFORMED_REGEX";
+    public static final String AUTH_KEY_WEBSERVICE_WRONG_TIMEOUT ="AUTH_KEY_WEBSERVICE_WRONG_TIMEOUT";
+
     private String webServiceUrl;
     private String searchUser;
     Pattern searchUserRegex = null;
@@ -190,7 +196,42 @@ public class WebServiceAuthenticationKeyMapper extends AbstractAuthenticationKey
         if(paramName.equalsIgnoreCase("readTimeout")) {
             return "10";
         }
+        if(paramName.equalsIgnoreCase("webServiceUrl")) {
+            return "http://host:port/service?authkey={key}";
+        }
         return super.getDefaultParamValue(paramName);
+    }
+    
+    public void validateParameter(String paramName, String value) throws FilterConfigException {
+        if(value == null) {
+            value = "";
+        }
+        if(paramName.equalsIgnoreCase("searchUser") && !value.isEmpty()) {
+            try {
+                Pattern.compile(value);
+            } catch(PatternSyntaxException e) {
+                throw createFilterException(AUTH_KEY_WEBSERVICE_MALFORMED_REGEX, value);
+            }
+        }
+        if(paramName.equalsIgnoreCase("connectTimeout")) {
+            try {
+                Integer.parseInt(value);
+            } catch(NumberFormatException e) {
+                throw createFilterException(AUTH_KEY_WEBSERVICE_WRONG_TIMEOUT, value);
+            }
+        }
+        if(paramName.equalsIgnoreCase("readTimeout")) {
+            try {
+                Integer.parseInt(value);
+            } catch(NumberFormatException e) {
+                throw createFilterException(AUTH_KEY_WEBSERVICE_WRONG_TIMEOUT, value);
+            }
+        }
+        if(paramName.equalsIgnoreCase("webServiceUrl")) {
+            if(!value.contains("{key}")) {
+                throw createFilterException(AUTH_KEY_WEBSERVICE_PLACEHOLDER_REQUIRED, value);
+            }
+        }
     }
     
     @Override

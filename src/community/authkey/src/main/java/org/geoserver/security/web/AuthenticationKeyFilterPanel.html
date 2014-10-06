@@ -31,7 +31,12 @@
                     <label ><wicket:message key="authKeyMapperName"></wicket:message></label>
                     <select wicket:id="authKeyMapperName"></select>
                   </li>
-				  
+				  <li>
+                    <div wicket:id="authKeyMapperParamsContainer">
+                        <div wicket:id="authKeyMapperParamsPanel">
+                        </div>
+                    </div>
+                </li>   
 				  <li>
                     <label ><wicket:message key="userGroupService"></wicket:message></label>
                     <select wicket:id="userGroupServiceName"></select>
@@ -42,12 +47,7 @@
 	        		<a wicket:id="synchronize"><span><wicket:message key="synchronize"></wicket:message></span></a>
 	      			</div>
 	  			</li>  	
-	  			<li>
-                    <div wicket:id="authKeyMapperParamsContainer">
-                        <div wicket:id="authKeyMapperParamsPanel">
-                        </div>
-                    </div>
-                </li>			  
+	  					  
 			  </ul>	  	  
 		  </fieldset>
 	  </li>

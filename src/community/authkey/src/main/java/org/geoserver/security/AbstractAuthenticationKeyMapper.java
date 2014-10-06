@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import org.geoserver.security.validation.FilterConfigException;
 import org.springframework.util.StringUtils;
 
 /**
@@ -124,5 +125,13 @@ public abstract class AbstractAuthenticationKeyMapper implements AuthenticationK
 
     public Map<String, String> getMapperConfiguration() {
         return parameters;
+    }
+    
+    public void validateParameter(String paramName, String value) throws FilterConfigException {
+        
+    }
+    
+    protected AuthenticationKeyFilterConfigException createFilterException (String errorid, Object ...args) {
+        return new AuthenticationKeyFilterConfigException(errorid,args);
     }
 }

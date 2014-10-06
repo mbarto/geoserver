@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.geoserver.security.impl.GeoServerUser;
+import org.geoserver.security.validation.FilterConfigException;
 import org.springframework.beans.factory.BeanNameAware;
 
 /**
@@ -74,5 +75,19 @@ public interface AuthenticationKeyMapper extends BeanNameAware {
      */
     public void configureMapper(Map<String, String> parameters);
     
+    /**
+     * Returns the mapper parameters.
+     * 
+     * @return
+     */
     public Map<String, String> getMapperConfiguration();
+
+    /**
+     * Validates the given parameter.
+     * 
+     * @param paramName
+     * @param string
+     * @throws FilterConfigException
+     */
+    public void validateParameter(String paramName, String value) throws FilterConfigException;
 }
