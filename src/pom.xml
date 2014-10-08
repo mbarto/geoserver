@@ -53,6 +53,14 @@
      <enabled>true</enabled>
    </snapshots>
   </repository>
+  <repository>
+   <id>mapfish</id>
+   <name>MapFish Maven Repository</name>
+   <url>http://dev.mapfish.org/maven/repository/</url>
+   <snapshots>
+     <enabled>true</enabled>
+   </snapshots>
+  </repository>
   
   <repository>
     <id>osgeo</id>
