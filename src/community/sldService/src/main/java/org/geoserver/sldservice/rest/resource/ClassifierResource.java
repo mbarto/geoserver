@@ -436,20 +436,12 @@ public class ClassifierResource extends AbstractCatalogResource {
 							final JSONObject child = (JSONObject) ((JSONArray) obj).get(i);
 							writer.startNode((String) key);
 							for (Object cKey : child.keySet()) {
-								if (!((String) cKey).startsWith("@")) {
-									writer.startNode((String) cKey);
-									writeChild(writer, child.get(cKey));
-									writer.endNode();
-								} else {
-									writer.addAttribute(((String) cKey).substring(1), (String) child.get(cKey));
-								}
+								writeKey(writer, child, (String) cKey);
 							}
 							writer.endNode();
 						}
 					} else {
-						writer.startNode((String) key);
-						writeChild(writer, obj);
-						writer.endNode();
+						writeKey(writer, (JSONObject)object, (String)key);
 					}
 				}
 			} else if (object instanceof JSONArray) {
@@ -469,6 +461,19 @@ public class ClassifierResource extends AbstractCatalogResource {
 				}
 			} else {
 				writer.setValue(object.toString());
+			}
+		}
+
+		private void writeKey(HierarchicalStreamWriter writer,
+				final JSONObject child, String key) {
+			if (key.startsWith("@")) {
+				writer.addAttribute(((String) key).substring(1), (String) child.get(key));				
+			} else if(key.startsWith("#")) {
+				writer.setValue((String) child.get(key));
+			} else {
+				writer.startNode(key);
+				writeChild(writer, child.get(key));
+				writer.endNode();
 			}
 		}
 
