@@ -279,13 +279,13 @@ public class ClassifierResource extends AbstractCatalogResource {
 							final FeatureType ftType = ((FeatureTypeInfo) obj).getFeatureType();
 							final FeatureCollection ftCollection = ((FeatureTypeInfo) obj).getFeatureSource(new NullProgressListener(), null).getFeatures();
 							List<Rule> rules = null;
-
+							Class<?> propertyType = ftType.getDescriptor(property).getType().getBinding();
 							if ("equalInterval".equals(method)) {
-								rules = builder.equalIntervalClassification(ftCollection, property, Integer.parseInt(intervals), Boolean.parseBoolean(open));
+								rules = builder.equalIntervalClassification(ftCollection, property, propertyType, Integer.parseInt(intervals), Boolean.parseBoolean(open));
 							} else if ("uniqueInterval".equals(method)) {
-								rules = builder.uniqueIntervalClassification(ftCollection, property);
+								rules = builder.uniqueIntervalClassification(ftCollection, property, propertyType);
 							} else if ("quantile".equals(method)) {
-								rules = builder.quantileClassification(ftCollection, property, Integer.parseInt(intervals), Boolean.parseBoolean(open));
+								rules = builder.quantileClassification(ftCollection, property, propertyType, Integer.parseInt(intervals), Boolean.parseBoolean(open));
 							}
 
 							if (colorRamp != null && colorRamp.length() > 0) {
@@ -317,15 +317,20 @@ public class ClassifierResource extends AbstractCatalogResource {
 								 */
 								if (geomT == LineString.class || geomT == MultiLineString.class) {
 									builder.lineStyle(rules, ramp);
+								} 
+								
+								/*
+								 * Point Symbolizer
+								 */
+								else if(geomT == Point.class || geomT == MultiPoint.class) {
+									builder.pointStyle(rules, ramp);
 								}
 
 								/*
 								 * Polygon Symbolyzer
 								 */
 								else if (geomT == MultiPolygon.class
-										|| geomT == Polygon.class
-										|| geomT == Point.class
-										|| geomT == MultiPoint.class) {
+										|| geomT == Polygon.class) {
 									builder.polygonStyle(rules, ramp);
 								}
 							}

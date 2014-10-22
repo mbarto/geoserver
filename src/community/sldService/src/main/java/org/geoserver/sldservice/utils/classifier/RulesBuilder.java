@@ -35,6 +35,7 @@ import org.geotools.filter.function.ExplicitClassifier;
 import org.geotools.filter.function.RangedClassifier;
 import org.geotools.filter.text.cql2.CQL;
 import org.geotools.filter.text.cql2.CQLException;
+import org.geotools.styling.Mark;
 import org.geotools.styling.Rule;
 import org.geotools.styling.StyleBuilder;
 import org.geotools.styling.StyleFactory;
@@ -42,6 +43,7 @@ import org.geotools.styling.Symbolizer;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
 import org.opengis.filter.FilterFactory2;
+import org.opengis.filter.expression.Expression;
 import org.opengis.filter.expression.Function;
 import org.opengis.filter.expression.Literal;
 import org.opengis.filter.expression.PropertyName;
@@ -78,7 +80,7 @@ public class RulesBuilder {
 	 * @return
 	 */
 	public List<Rule> quantileClassification(FeatureCollection features,
-			String property, int classNumber, boolean open) {
+			String property, Class<?> propertyType, int classNumber, boolean open) {
 
 		FeatureType fType;
 		Classifier groups = null;
@@ -88,11 +90,11 @@ public class RulesBuilder {
 			groups = (Classifier) classify.evaluate(features);
 			if (groups instanceof RangedClassifier)
 			    if(open)
-			        return openRangedRules((RangedClassifier) groups, property);
+			        return openRangedRules((RangedClassifier) groups, property, propertyType);
 			    else
-			        return closedRangedRules((RangedClassifier) groups, property);
+			        return closedRangedRules((RangedClassifier) groups, property, propertyType);
 			else if (groups instanceof ExplicitClassifier)
-				return this.explicitRules((ExplicitClassifier) groups, property);
+				return this.explicitRules((ExplicitClassifier) groups, property, propertyType);
 
 		} catch (Exception e) {
 			if (LOGGER.isLoggable(Level.INFO))
@@ -111,19 +113,20 @@ public class RulesBuilder {
 	 * @param classNumber
 	 * @return
 	 */
-	public List<Rule> equalIntervalClassification(FeatureCollection features, String property, int classNumber, boolean open) {
+	public List<Rule> equalIntervalClassification(FeatureCollection features, String property, Class<?> propertyType, int classNumber, boolean open) {
 		Classifier groups = null;
 		try {
+			
 			final Function classify = ff.function("EqualInterval", ff.property(property), ff.literal(classNumber));
 			groups = (Classifier) classify.evaluate(features);
 			//System.out.println(groups.getSize());
 			if (groups instanceof RangedClassifier)
 			    if(open)
-			        return openRangedRules((RangedClassifier) groups, property);
+			        return openRangedRules((RangedClassifier) groups, property, propertyType);
 			    else
-			        return closedRangedRules((RangedClassifier) groups, property);
+			        return closedRangedRules((RangedClassifier) groups, property, propertyType);
 			else if (groups instanceof ExplicitClassifier)
-				return this.explicitRules((ExplicitClassifier) groups, property);
+				return this.explicitRules((ExplicitClassifier) groups, property, propertyType);
 
 		} catch (Exception e) {
 			if (LOGGER.isLoggable(Level.INFO))
@@ -142,16 +145,16 @@ public class RulesBuilder {
 	 * @return
 	 */
 	public List<Rule> uniqueIntervalClassification(FeatureCollection features,
-			String property) {
+			String property, Class<?> propertyType) {
 		Classifier groups = null;
 		int classNumber = features.size();
 		try {
 			final Function classify = ff.function("UniqueInterval", ff.property(property), ff.literal(classNumber));
 			groups = (Classifier) classify.evaluate(features);
 			if (groups instanceof RangedClassifier)
-				return this.closedRangedRules((RangedClassifier) groups, property);
+				return this.closedRangedRules((RangedClassifier) groups, property, propertyType);
 			else if (groups instanceof ExplicitClassifier)
-				return this.explicitRules((ExplicitClassifier) groups, property);
+				return this.explicitRules((ExplicitClassifier) groups, property, propertyType);
 
 		} catch (Exception e) {
 			if (LOGGER.isLoggable(Level.INFO))
@@ -184,6 +187,42 @@ public class RulesBuilder {
 				color = colors.next();
 				rule = it.next();
 				rule.setSymbolizers(new Symbolizer[] { sb.createPolygonSymbolizer(sb.createStroke(Color.BLACK,1),sb.createFill(color)) });
+			}
+		} catch (Exception e) {
+			if (LOGGER.isLoggable(Level.INFO))
+				LOGGER.log(Level.INFO, "Failed to build polygon Symbolizer" 
+						+ e.getLocalizedMessage(), e);
+		}
+
+	}
+	
+	/**
+	 * Generate Polygon Symbolyzer for each rule in list
+	 * Fill color is choose from rampcolor
+	 * @param rules
+	 * @param ramp
+	 */
+	public void pointStyle(List<Rule> rules, ColorRamp fillRamp) {
+
+		Iterator<Rule> it;
+		Rule rule;
+		Iterator<Color> colors;
+		Color color;
+
+		try {
+			//adjust the colorRamp with the correct number of classes
+			fillRamp.setNumClasses(rules.size());
+			colors = fillRamp.getRamp().iterator();
+			
+			it = rules.iterator();
+			while (it.hasNext() && colors.hasNext()) {
+				color = colors.next();
+				rule = it.next();
+				//sb.createStroke(Color.BLACK,1),
+				
+				Mark mark = sb.createMark(StyleBuilder.MARK_CIRCLE,
+						sb.createFill(color), sb.createStroke(color));
+				rule.setSymbolizers(new Symbolizer[] { sb.createPointSymbolizer(sb.createGraphic(null, mark, null)) });
 			}
 		} catch (Exception e) {
 			if (LOGGER.isLoggable(Level.INFO))
@@ -237,22 +276,23 @@ public class RulesBuilder {
      * @param property
      * @return
      */
-    private List<Rule> openRangedRules(RangedClassifier groups, String property) {
+    private List<Rule> openRangedRules(RangedClassifier groups, String property, Class<?> propertyType) {
 
         Rule r;
         Filter f;
         List<Rule> list = new ArrayList();
-        PropertyName att = ff.property(property);
+        Expression att = normalizeProperty(ff.property(property), propertyType);
+        
         try {
             /* First class */
             r = styleFactory.createRule();
             if(groups.getMin(0).equals(groups.getMax(0))){
-                f = CQL.toFilter(att + " =" + ff.literal(groups.getMax(0)));
+            	f = ff.equals(att, ff.literal(groups.getMax(0)));
                 r.setFilter(f);
                 r.setTitle( ff.literal(groups.getMax(0)).toString());
                 list.add(r);
             }else{
-                f = CQL.toFilter(att + " <=" + ff.literal(groups.getMax(0)));
+                f = ff.lessOrEqual(att, ff.literal(groups.getMax(0)));
                 r.setFilter(f);
                 r.setTitle(" <= " + ff.literal(groups.getMax(0)));
                 list.add(r);
@@ -260,12 +300,15 @@ public class RulesBuilder {
             for (int i = 1; i < groups.getSize() - 1; i++) {
                 r = styleFactory.createRule();
                 if(groups.getMin(i).equals(groups.getMax(i))){
-                    f = CQL.toFilter(att + "=" + ff.literal(groups.getMin(i)));
+                	f = ff.equals(att, ff.literal(groups.getMax(i)));
                     r.setTitle( ff.literal(groups.getMin(i)).toString());
                     r.setFilter(f);
                     list.add(r);
                 }else{
-                    f = CQL.toFilter(att + ">" + ff.literal(groups.getMin(i)) + " AND " + att + " <=" + ff.literal(groups.getMax(i)));
+                	f = ff.and(
+                			ff.greater(att, ff.literal(groups.getMin(i))),
+                			ff.lessOrEqual(att, ff.literal(groups.getMax(i)))
+                	);
                     r.setTitle(" > " + ff.literal(groups.getMin(i)) + " AND <= " + ff.literal(groups.getMax(i)));
                     r.setFilter(f);
                     list.add(r);
@@ -274,24 +317,32 @@ public class RulesBuilder {
             /* Last class */
             r = styleFactory.createRule();
             if(groups.getMin(groups.getSize() - 1).equals(groups.getMax(groups.getSize() - 1))){
-                f = CQL.toFilter(att + "=" + ff.literal(groups.getMin(groups.getSize() - 1)));
+            	f = ff.equals(att, ff.literal(groups.getMin(groups.getSize() - 1)));
                 r.setFilter(f);
                 r.setTitle( ff.literal(groups.getMin(groups.getSize() - 1)).toString());
                 list.add(r);
             }else{
-                f = CQL.toFilter(att + ">" + ff.literal(groups.getMin(groups.getSize() - 1)));
+            	f = ff.greater(att, ff.literal(groups.getMin(groups.getSize() - 1)));
                 r.setFilter(f);
                 r.setTitle(" > " + ff.literal(groups.getMin(groups.getSize() - 1)));
                 list.add(r);
             }
             return list;
-        } catch (CQLException e) {
+        } catch (Exception e) {
         	if (LOGGER.isLoggable(Level.INFO))
 				LOGGER.log(Level.INFO, "Failed to build Open Ranged rules" 
 						+ e.getLocalizedMessage(), e);
         }
         return null;
     }
+
+	private Expression normalizeProperty(PropertyName property,
+			Class<?> propertyType) {
+		if(Integer.class.isAssignableFrom(propertyType) || Long.class.isAssignableFrom(propertyType)) {
+			return ff.function("convert", property, ff.literal("java.lang.Double"));
+		}
+		return property;
+	}
 
 	/**
 	 * Generate Rules from Rangedclassifier groups
@@ -300,7 +351,7 @@ public class RulesBuilder {
 	 * @param property
 	 * @return
 	 */
-	private List<Rule> closedRangedRules(RangedClassifier groups, String property) {
+	private List<Rule> closedRangedRules(RangedClassifier groups, String property, Class<?> propertyType) {
 
 		Rule r;
 		Filter f;
@@ -341,7 +392,7 @@ public class RulesBuilder {
 	 * @param property
 	 * @return
 	 */
-	private List<Rule> explicitRules(ExplicitClassifier groups, String property) {
+	private List<Rule> explicitRules(ExplicitClassifier groups, String property, Class<?> propertyType) {
 
 		Rule r;
 		Filter f;
