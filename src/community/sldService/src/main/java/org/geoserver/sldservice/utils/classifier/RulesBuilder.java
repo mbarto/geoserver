@@ -356,7 +356,7 @@ public class RulesBuilder {
 		Rule r;
 		Filter f;
 		List<Rule> list = new ArrayList();
-		PropertyName att = ff.property(property);
+		Expression att = normalizeProperty(ff.property(property), propertyType);
 		try {
 			/* First class */
 			r = styleFactory.createRule();
@@ -365,19 +365,22 @@ public class RulesBuilder {
 				if(i > 0 && groups.getMax(i).equals(groups.getMax(i -1)))
 				    continue;
 				if(groups.getMin(i).equals(groups.getMax(i))){
-					f = CQL.toFilter(att + "=" + ff.literal(groups.getMin(i)));
+					f = ff.equals(att, ff.literal(groups.getMin(i)));
 					r.setTitle( ff.literal(groups.getMin(i)).toString());
 					r.setFilter(f);
 					list.add(r);
 				} else {
-					f = CQL.toFilter(att + (i == 0 ? ">=" : ">") + ff.literal(groups.getMin(i)) + " AND " + att + " <=" + ff.literal(groups.getMax(i)));
+					f = ff.and(
+							i == 0 ? ff.greaterOrEqual(att, ff.literal(groups.getMin(i))) : ff.greater(att, ff.literal(groups.getMin(i))),
+							ff.lessOrEqual(att, ff.literal(groups.getMax(i)))
+							);
 					r.setTitle(" > " + ff.literal(groups.getMin(i)) + " AND <= " + ff.literal(groups.getMax(i)));
 					r.setFilter(f);
 					list.add(r);
 				}
 			}
 			return list;
-		} catch (CQLException e) {
+		} catch (Exception e) {
 			if (LOGGER.isLoggable(Level.INFO))
 				LOGGER.log(Level.INFO, "Failed to build closed Ranged Rules" 
 						+ e.getLocalizedMessage(), e);
