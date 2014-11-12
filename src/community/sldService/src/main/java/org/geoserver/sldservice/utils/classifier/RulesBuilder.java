@@ -145,21 +145,30 @@ public class RulesBuilder {
 	 * @return
 	 */
 	public List<Rule> uniqueIntervalClassification(FeatureCollection features,
-			String property, Class<?> propertyType) {
+			String property, Class<?> propertyType, int intervals) throws IllegalArgumentException {
 		Classifier groups = null;
 		int classNumber = features.size();
 		try {
 			final Function classify = ff.function("UniqueInterval", ff.property(property), ff.literal(classNumber));
 			groups = (Classifier) classify.evaluate(features);
+			
 			if (groups instanceof RangedClassifier)
 				return this.closedRangedRules((RangedClassifier) groups, property, propertyType);
-			else if (groups instanceof ExplicitClassifier)
-				return this.explicitRules((ExplicitClassifier) groups, property, propertyType);
+			else if (groups instanceof ExplicitClassifier) {
+				ExplicitClassifier explicitGroups = (ExplicitClassifier) groups;
+				if(intervals > 0 && explicitGroups.getSize() > intervals) {
+					throw new IllegalArgumentException("Intervals: " + explicitGroups.getSize());
+				}
+				return this.explicitRules(explicitGroups, property, propertyType);
+			}
 
 		} catch (Exception e) {
 			if (LOGGER.isLoggable(Level.INFO))
 				LOGGER.log(Level.INFO, "Failed to build UniqueInterval Classification" 
 						+ e.getLocalizedMessage(), e);
+			if(e instanceof IllegalArgumentException) {
+				throw (IllegalArgumentException)e;
+			}
 		}
 		return null;
 	}

@@ -104,23 +104,26 @@ public class ClassifierResource extends AbstractCatalogResource {
 		if (layer == null) {
 			return new ArrayList();
 		}
-
-		final LayerInfo layerInfo = catalog.getLayerByName(layer);
-		if (layerInfo != null) {
-			final List<Rule> rules = this.generateClassifiedSLD(attributes, parameters);
-			RulesList jsonRules = null;
-
-			if (rules != null)
-				jsonRules = generateRulesList(layer, getRequest(), rules);
-
-			if (jsonRules != null) {
-				return jsonRules;
-			} else {
-				throw new RestletException("Error generating Classification!", Status.CLIENT_ERROR_BAD_REQUEST);
+		try {
+			final LayerInfo layerInfo = catalog.getLayerByName(layer);
+			if (layerInfo != null) {
+				final List<Rule> rules = this.generateClassifiedSLD(attributes, parameters);
+				RulesList jsonRules = null;
+	
+				if (rules != null)
+					jsonRules = generateRulesList(layer, getRequest(), rules);
+	
+				if (jsonRules != null) {
+					return jsonRules;
+				} else {
+					throw new RestletException("Error generating Classification!", Status.CLIENT_ERROR_BAD_REQUEST);
+				}
 			}
+			
+			return new ArrayList();
+		} catch(IllegalArgumentException e) {
+			return e.getMessage();
 		}
-		
-		return new ArrayList();
 	}
 
 	@Override
@@ -265,6 +268,7 @@ public class ClassifierResource extends AbstractCatalogResource {
 			final String property = form.getFirstValue("attribute");
 			final String method = form.getFirstValue("method", "equalInterval");
 			final String intervals = form.getFirstValue("intervals", "2");
+			final String intervalsForUnique = form.getFirstValue("intervals", "-1");
 			final String open = form.getFirstValue("open", "false");
 			final String colorRamp = form.getFirstValue("ramp");
 
@@ -283,7 +287,7 @@ public class ClassifierResource extends AbstractCatalogResource {
 							if ("equalInterval".equals(method)) {
 								rules = builder.equalIntervalClassification(ftCollection, property, propertyType, Integer.parseInt(intervals), Boolean.parseBoolean(open));
 							} else if ("uniqueInterval".equals(method)) {
-								rules = builder.uniqueIntervalClassification(ftCollection, property, propertyType);
+								rules = builder.uniqueIntervalClassification(ftCollection, property, propertyType, Integer.parseInt(intervalsForUnique));
 							} else if ("quantile".equals(method)) {
 								rules = builder.quantileClassification(ftCollection, property, propertyType, Integer.parseInt(intervals), Boolean.parseBoolean(open));
 							}
