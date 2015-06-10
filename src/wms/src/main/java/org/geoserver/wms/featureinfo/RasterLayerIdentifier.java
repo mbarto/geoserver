@@ -8,6 +8,7 @@ package org.geoserver.wms.featureinfo;
 import java.awt.Rectangle;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.RenderedImage;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -22,7 +23,10 @@ import org.geoserver.catalog.ProjectionPolicy;
 import org.geoserver.wms.FeatureInfoRequestParameters;
 import org.geoserver.wms.GetMapRequest;
 import org.geoserver.wms.MapLayerInfo;
+import org.geoserver.wms.RenderingVariables;
 import org.geoserver.wms.WMS;
+import org.geoserver.wms.WMSMapContent;
+import org.geoserver.wms.map.RasterSymbolizerVisitor;
 import org.geotools.coverage.GridSampleDimension;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridEnvelope2D;
@@ -30,6 +34,8 @@ import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.io.AbstractGridFormat;
 import org.geotools.coverage.grid.io.GridCoverage2DReader;
 import org.geotools.data.DataUtilities;
+import org.geotools.data.Query;
+import org.geotools.data.collection.CollectionFeatureSource;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.factory.GeoTools;
 import org.geotools.factory.Hints;
@@ -37,9 +43,14 @@ import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
+import org.geotools.filter.function.EnvFunction;
 import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.TransformedDirectPosition;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.map.FeatureLayer;
 import org.geotools.parameter.Parameter;
+import org.geotools.renderer.lite.RenderingTransformationHelper;
+import org.geotools.resources.coverage.FeatureUtilities;
 import org.geotools.resources.geometry.XRectangle2D;
 import org.geotools.resources.image.ImageUtilities;
 import org.geotools.styling.Style;
@@ -51,6 +62,7 @@ import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
+import org.opengis.filter.expression.Expression;
 import org.opengis.geometry.DirectPosition;
 import org.opengis.parameter.GeneralParameterValue;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -94,30 +106,16 @@ public class RasterLayerIdentifier implements LayerIdentifier {
         
         // set the requested position in model space for this request
         final Coordinate middle = WMS.pixelToWorld(params.getX(), params.getY(), params.getRequestedBounds(), params.getWidth(), params.getHeight());
-        CoordinateReferenceSystem requestedCRS = params.getRequestedCRS();
-        DirectPosition position = new DirectPosition2D(requestedCRS, middle.x, middle.y);
-
-        // change from request crs to coverage crs in order to compute a minimal request
-        // area,
-        // TODO this code need to be made much more robust
-        if (requestedCRS != null) {
-            final CoordinateReferenceSystem targetCRS;
-            if(cinfo.getProjectionPolicy() == ProjectionPolicy.NONE) {
-                targetCRS = cinfo.getNativeCRS();
-            } else {
-                targetCRS = cinfo.getCRS();
-            }
-            final TransformedDirectPosition arbitraryToInternal = new TransformedDirectPosition(
-                    requestedCRS, targetCRS, new Hints(Hints.LENIENT_DATUM_SHIFT,
-                            Boolean.TRUE));
-            try {
-                arbitraryToInternal.transform(position);
-            } catch (TransformException exception) {
-                throw new CannotEvaluateException("Unable to answer the geatfeatureinfo",
-                        exception);
-            }
-            position = arbitraryToInternal;
+        final CoordinateReferenceSystem targetCRS;
+        if(cinfo.getProjectionPolicy() == ProjectionPolicy.NONE) {
+            targetCRS = cinfo.getNativeCRS();
+        } else {
+            targetCRS = cinfo.getCRS();
         }
+        CoordinateReferenceSystem requestedCRS = params.getRequestedCRS();
+        
+        DirectPosition position = reprojectPosition(middle, requestedCRS, targetCRS);
+        
         // check that the provided point is inside the bbox for this coverage
         if (!reader.getOriginalEnvelope().contains(position)) {
             return null;
@@ -166,12 +164,35 @@ public class RasterLayerIdentifier implements LayerIdentifier {
             }
 
         }
-
-        final GridCoverage2D coverage = (GridCoverage2D) reader.read(parameters);
+        
+        
+        GridCoverage2D coverage = (GridCoverage2D) reader.read(parameters);
         if (coverage == null) {
             if (LOGGER.isLoggable(Level.FINE))
                 LOGGER.fine("Unable to load raster data for this request.");
             return null;
+        }
+        Expression transformation = getRenderingTransformation(params);
+        if(transformation != null) {
+            final GridCoverage2D helperCoverage = coverage;
+            RenderingTransformationHelper helper = new RenderingTransformationHelper() {
+                
+                @Override
+                protected GridCoverage2D readCoverage(GridCoverage2DReader arg0, Object arg1,
+                        GridGeometry2D arg2) throws IOException {
+                    return helperCoverage;
+                }
+            };
+            setupEnvironmentVariables(params, getMap);
+            
+            Object transformed = helper.applyRenderingTransformation(transformation, new CollectionFeatureSource(FeatureUtilities.wrapGridCoverage(helperCoverage)), 
+                    Query.ALL, Query.ALL, coverage.getGridGeometry(), coverage.getCoordinateReferenceSystem(), null);
+            if(transformed instanceof GridCoverage2D) {
+                coverage = (GridCoverage2D)transformed;
+                position = reprojectPosition(middle, requestedCRS, coverage.getCoordinateReferenceSystem());
+            } else {
+                LOGGER.warning("Raster to Vector Rendering Transformation not supported in RasterLayerIdentifier");
+            }
         }
 
         FeatureCollection pixel = null;
@@ -189,6 +210,55 @@ public class RasterLayerIdentifier implements LayerIdentifier {
             }
         }
         return Collections.singletonList(pixel);
+    }
+
+    private DirectPosition reprojectPosition(final Coordinate middle,
+            CoordinateReferenceSystem requestedCRS, CoordinateReferenceSystem targetCRS) {
+        DirectPosition position = new DirectPosition2D(requestedCRS, middle.x, middle.y);
+        if (requestedCRS != null) {
+            
+            final TransformedDirectPosition arbitraryToInternal = new TransformedDirectPosition(
+                    requestedCRS, targetCRS, new Hints(Hints.LENIENT_DATUM_SHIFT,
+                            Boolean.TRUE));
+            try {
+                arbitraryToInternal.transform(position);
+            } catch (TransformException exception) {
+                throw new CannotEvaluateException("Unable to answer the geatfeatureinfo",
+                        exception);
+            }
+            position = arbitraryToInternal;
+        }
+        return position;
+    }
+
+    private void setupEnvironmentVariables(FeatureInfoRequestParameters params, GetMapRequest getMap) {
+        WMSMapContent mc = new WMSMapContent(params.getGetMapRequest());
+            
+        // prepare the fake web map content
+        mc.setTransparent(true);
+        mc.setBuffer(params.getBuffer());
+        mc.getViewport().setBounds(new ReferencedEnvelope(getMap.getBbox(), getMap.getCrs()));
+        mc.setMapWidth(getMap.getWidth());
+        mc.setMapHeight(getMap.getHeight());
+        
+        // setup the env variables just like in the original GetMap
+        RenderingVariables.setupEnvironmentVariables(mc);
+        
+        for(Object key : params.getGetMapRequest().getEnv().keySet()) {
+            EnvFunction.setLocalValue((String)key, params.getGetMapRequest().getEnv().get(key));
+        }
+    }
+
+    private Expression getRenderingTransformation(FeatureInfoRequestParameters params) {
+        double scaleDenominator = params.getScaleDenominator();
+        
+        Style style = params.getStyle();
+
+        RasterSymbolizerVisitor visitor = new RasterSymbolizerVisitor(scaleDenominator, null);
+        style.accept(visitor);
+
+        Expression transformation = visitor.getRasterRenderingTransformation();
+        return transformation;
     }
     
     private SimpleFeatureCollection wrapPixelInFeatureCollection(GridCoverage2D coverage,
