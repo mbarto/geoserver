@@ -20,6 +20,16 @@
  <dependencies>
    <dependency>
      <groupId>org.geoserver.community</groupId>
+     <artifactId>gs-onelogin</artifactId>
+     <version>${project.version}</version>
+   </dependency>
+   <dependency>
+     <groupId>org.geoserver.community</groupId>
+     <artifactId>gs-port-analysis</artifactId>
+     <version>${project.version}</version>
+   </dependency>
+   <dependency>
+     <groupId>org.geoserver.community</groupId>
      <artifactId>gs-authkey</artifactId>
      <version>${project.version}</version>
    </dependency>

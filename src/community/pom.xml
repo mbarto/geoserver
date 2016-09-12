@@ -74,6 +74,8 @@
           <descriptor>release/ext-geogig.xml</descriptor>
           <descriptor>release/ext-jdbcstore.xml</descriptor>
           <descriptor>release/ext-gwc-sqlite.xml</descriptor> 
+          <descriptor>release/ext-onelogin.xml</descriptor> 
+          <descriptor>release/ext-portanalysis.xml</descriptor> 
         </descriptors>
       </configuration>
      </plugin>
@@ -201,6 +203,8 @@
 	<module>gwc-s3</module>
 	<module>ysld</module>
         <module>gwc-sqlite</module>
+        <module>onelogin</module>
+        <module>portanalysis</module>
       </modules>
     </profile>
     <profile>
