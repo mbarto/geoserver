@@ -14,6 +14,8 @@
 
 	<!-- Enable auto-wiring -->
 	<context:annotation-config />
+	
+	<context:property-placeholder location="classpath:onelogin.properties" ignore-unresolvable="true" ignore-resource-not-found="true"/>
 
 	<!-- Scan for auto-wiring classes in spring saml packages -->
 	<context:component-scan base-package="org.springframework.security.saml" />
@@ -164,7 +166,7 @@
 	</bean>
 	
 	<bean id="successLogoutHandler" class="org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler">
-        <property name="defaultTargetUrl" value="/"/>
+        <property name="defaultTargetUrl" value="${saml.logout.url:/}"/>
     </bean>
     
     <bean id="logoutHandler"
