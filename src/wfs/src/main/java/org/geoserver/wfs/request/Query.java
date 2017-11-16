@@ -7,6 +7,7 @@ package org.geoserver.wfs.request;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -62,6 +63,8 @@ public abstract class Query extends RequestObject {
     public abstract List<SortBy> getSortBy();
 
     public abstract List<XlinkPropertyNameType> getXlinkPropertyNames();
+    
+    public abstract List<String> getJoinTypes(); 
 
     public static class WFS11 extends Query {
 
@@ -97,6 +100,15 @@ public abstract class Query extends RequestObject {
         @Override
         public List<XlinkPropertyNameType> getXlinkPropertyNames() {
             return eGet(adaptee, "xlinkPropertyName", List.class);
+        }
+
+        @Override
+        public List<String> getJoinTypes() {
+            String joinTypes = eGet(adaptee, "joinTypes", String.class);
+            if (joinTypes != null) {
+                return Arrays.asList(joinTypes.split(" "));
+            }
+            return new ArrayList<String>();
         }
 
     }
@@ -142,6 +154,15 @@ public abstract class Query extends RequestObject {
         public List<XlinkPropertyNameType> getXlinkPropertyNames() {
             //no equivalent in wfs 2.0
             return Collections.EMPTY_LIST;
+        }
+        
+        @Override
+        public List<String> getJoinTypes() {
+            String joinTypes = eGet(adaptee, "joinTypes", String.class);
+            if (joinTypes != null) {
+                return Arrays.asList(joinTypes.split(" "));
+            }
+            return new ArrayList<String>();
         }
     }
 }

@@ -395,7 +395,12 @@ public class GetFeature {
                                 throw new WFSException(request, String.format("Query specified %d types but %d " +
                                         "join filters were found", metas.size(), extractor.getJoins().size()));
                             }
-
+                            if (joins.size() > 0 && query.getJoinTypes() != null && query.getJoinTypes().size() > 0) {
+                                for (int j = 0; j < joins.size() && j < query.getJoinTypes().size(); j++) {
+                                    joins.get(j).setType(Join.Type.valueOf(query.getJoinTypes().get(j).toUpperCase()));
+                                }
+                            }
+                            
                             // validate the filter for each join, as well as the join filter
                             for (int j = 1; j < metas.size(); j++) {
                                 Join join = joins.get(j-1);

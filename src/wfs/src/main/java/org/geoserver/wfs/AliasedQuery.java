@@ -197,4 +197,9 @@ class AliasedQuery extends Query {
         return delegate.getXlinkPropertyNames();
     }
 
+    @Override
+    public List<String> getJoinTypes() {
+        return delegate.getJoinTypes();
+    }
+
 }

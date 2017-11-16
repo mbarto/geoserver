@@ -208,6 +208,8 @@
 
     <bean id="aggregateProcessResultPPIO" class="org.geoserver.wps.gs.AggregateProcessPPIO"/>
     <bean id="aggregateProcessResultJSONPPIO" class="org.geoserver.wps.gs.AggregateProcessJSONPPIO"/>
+    <bean id="aggregateProcessResultFeatureCollectionGMLPPIO" class="org.geoserver.wps.gs.AggregateProcessFeatureCollectionPPIO.WFS10"/>
+    <bean id="aggregateProcessResultFeatureCollectionGeoJSONPPIO" class="org.geoserver.wps.gs.AggregateProcessFeatureCollectionPPIO.GeoJSON"/>
 
     <bean id="storeCoverageProcess" class="org.geoserver.wps.gs.StoreCoverage" >
       <constructor-arg index="0" ref="wpsResourceManager"></constructor-arg>
