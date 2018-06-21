@@ -29,6 +29,8 @@ public class CustomColorRamp implements ColorRamp {
 
     private Color midColor = null;
 
+    private List<Color> inputColors = null;
+
     public int getNumClasses() {
         return classNum;
     }
@@ -63,49 +65,65 @@ public class CustomColorRamp implements ColorRamp {
         midColor = mid;
     }
 
-    protected void createRamp() throws Exception {
-        int red, green, blue;
-        double sRed, sGreen, sBlue;
-        int mid;
-        if (startColor == null || endColor == null)
-            throw new Exception("Start or end color not setted unable to build color ramp");
+    public void setInputColors(List<Color> inputColors) {
+        this.inputColors = inputColors;
+    }
 
-        if (midColor == null) {
-            sRed = ((double) endColor.getRed() - startColor.getRed()) / (double) (classNum - 1);
-            sGreen =
-                    ((double) endColor.getGreen() - startColor.getGreen())
-                            / (double) (classNum - 1);
-            sBlue = ((double) endColor.getBlue() - startColor.getBlue()) / (double) (classNum - 1);
-            for (int i = 0; i < classNum - 1; i++) {
-                red = (int) (sRed * i + startColor.getRed());
-                green = (int) (sGreen * i + startColor.getGreen());
-                blue = (int) (sBlue * i + startColor.getBlue());
-                colors.add(new Color(red, green, blue));
+    protected void createRamp() throws Exception {
+        if (inputColors != null) {
+            if (classNum <= inputColors.size() + 1) {
+                colors = inputColors;
+            } else {
+                // TODO
             }
         } else {
-            mid = (classNum - 1) / 2;
-            int rest = (classNum - 1) % 2;
-            sRed = ((double) midColor.getRed() - startColor.getRed()) / (double) (mid);
-            sGreen = ((double) midColor.getGreen() - startColor.getGreen()) / (double) (mid);
-            sBlue = ((double) midColor.getBlue() - startColor.getBlue()) / (double) (mid);
-            for (int i = 0; i < mid; i++) {
-                red = (int) (sRed * i + startColor.getRed());
-                green = (int) (sGreen * i + startColor.getGreen());
-                blue = (int) (sBlue * i + startColor.getBlue());
-                colors.add(new Color(red, green, blue));
-            }
-            int count = mid;
-            sRed = ((double) endColor.getRed() - midColor.getRed()) / (double) (mid + rest - 1);
-            sGreen =
-                    ((double) endColor.getGreen() - midColor.getGreen())
-                            / (double) (mid + rest - 1);
-            sBlue = ((double) endColor.getBlue() - midColor.getBlue()) / (double) (mid + rest - 1);
-            for (int i = 0; i < (mid + rest); i++) {
-                red = (int) (sRed * i + midColor.getRed());
-                green = (int) (sGreen * i + midColor.getGreen());
-                blue = (int) (sBlue * i + midColor.getBlue());
-                colors.add(new Color(red, green, blue));
-                count++;
+            int red, green, blue;
+            double sRed, sGreen, sBlue;
+            int mid;
+            if (startColor == null || endColor == null)
+                throw new Exception("Start or end color not setted unable to build color ramp");
+
+            if (midColor == null) {
+                sRed = ((double) endColor.getRed() - startColor.getRed()) / (double) (classNum - 1);
+                sGreen =
+                        ((double) endColor.getGreen() - startColor.getGreen())
+                                / (double) (classNum - 1);
+                sBlue =
+                        ((double) endColor.getBlue() - startColor.getBlue())
+                                / (double) (classNum - 1);
+                for (int i = 0; i < classNum - 1; i++) {
+                    red = (int) (sRed * i + startColor.getRed());
+                    green = (int) (sGreen * i + startColor.getGreen());
+                    blue = (int) (sBlue * i + startColor.getBlue());
+                    colors.add(new Color(red, green, blue));
+                }
+            } else {
+                mid = (classNum - 1) / 2;
+                int rest = (classNum - 1) % 2;
+                sRed = ((double) midColor.getRed() - startColor.getRed()) / (double) (mid);
+                sGreen = ((double) midColor.getGreen() - startColor.getGreen()) / (double) (mid);
+                sBlue = ((double) midColor.getBlue() - startColor.getBlue()) / (double) (mid);
+                for (int i = 0; i < mid; i++) {
+                    red = (int) (sRed * i + startColor.getRed());
+                    green = (int) (sGreen * i + startColor.getGreen());
+                    blue = (int) (sBlue * i + startColor.getBlue());
+                    colors.add(new Color(red, green, blue));
+                }
+                int count = mid;
+                sRed = ((double) endColor.getRed() - midColor.getRed()) / (double) (mid + rest - 1);
+                sGreen =
+                        ((double) endColor.getGreen() - midColor.getGreen())
+                                / (double) (mid + rest - 1);
+                sBlue =
+                        ((double) endColor.getBlue() - midColor.getBlue())
+                                / (double) (mid + rest - 1);
+                for (int i = 0; i < (mid + rest); i++) {
+                    red = (int) (sRed * i + midColor.getRed());
+                    green = (int) (sGreen * i + midColor.getGreen());
+                    blue = (int) (sBlue * i + midColor.getBlue());
+                    colors.add(new Color(red, green, blue));
+                    count++;
+                }
             }
         }
     }
