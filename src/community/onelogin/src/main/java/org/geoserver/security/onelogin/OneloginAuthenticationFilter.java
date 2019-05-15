@@ -78,6 +78,7 @@ public class OneloginAuthenticationFilter extends GeoServerPreAuthenticatedCompo
                 generator.setRequestSigned(false);
                 generator.setWantAssertionSigned(authConfig.getWantAssertionSigned());
                 ExtendedMetadata em = new ExtendedMetadata();
+                em.setLocal(true);
                 em.setRequireLogoutRequestSigned(false);
                 generator.setExtendedMetadata(em);
                 MetadataGeneratorFilter metadataGeneratorFilter =

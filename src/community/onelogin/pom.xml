@@ -19,7 +19,7 @@
 	<name>GeoServer OneLogin Module</name>
 
 	<properties>
-		<spring.security.saml.version>1.0.2.RELEASE</spring.security.saml.version>
+		<spring.security.saml.version>1.0.3.RELEASE</spring.security.saml.version>
 	</properties>
 
 	<dependencies>

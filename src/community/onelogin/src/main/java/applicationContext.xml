@@ -194,12 +194,13 @@
     <bean id="successRedirectHandler"
         class="org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler">
         <property name="defaultTargetUrl" value="/" />
+        <property name="targetUrlParameter" value="RelayState"/>
     </bean>
 
     <bean id="failureRedirectHandler"
         class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
         <property name="useForward" value="true" />
-        <property name="defaultFailureUrl" value="/" />
+        <property name="defaultFailureUrl" value="/error" />
     </bean>
 
     <!-- Initialization of OpenSAML library -->
