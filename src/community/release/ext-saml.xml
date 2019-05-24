@@ -9,6 +9,7 @@
       <directory>release/target/dependency</directory>
       <outputDirectory/>
       <includes>
+        <include>bcprov-jdk15-1.46.jar</include>
         <include>gs-saml*.jar</include>
         <include>xmlsec*.jar</include>
         <include>xmltooling*.jar</include>
@@ -20,6 +21,7 @@
         <include>opensaml*.jar</include>
         <include>openws*.jar</include>
         <include>velocity*.jar</include>
+        <include>esapi*.jar</include>
       </includes>
     </fileSet>
   </fileSets>
