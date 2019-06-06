@@ -23,7 +23,13 @@ import org.geoserver.security.impl.GeoServerRole;
 import org.geoserver.security.impl.GeoServerUser;
 import org.geoserver.security.impl.RoleCalculator;
 import org.geotools.util.logging.Logging;
+import org.joda.time.format.DateTimeFormatter;
 import org.opensaml.saml2.core.Attribute;
+import org.opensaml.xml.XMLObject;
+import org.opensaml.xml.schema.XSAny;
+import org.opensaml.xml.schema.XSDateTime;
+import org.opensaml.xml.schema.XSInteger;
+import org.opensaml.xml.schema.XSString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -77,13 +83,37 @@ public class SAMLUserDetailsServiceImpl implements SAMLUserDetailsService {
         GeoServerUser user = new GeoServerUser(principal);
         // , "", true, true, true, true, roles);
         for (Attribute attr : credential.getAttributes()) {
-            user.getProperties()
-                    .setProperty(
-                            attr.getFriendlyName() == null
-                                    ? attr.getName()
-                                    : attr.getFriendlyName(),
-                            ((org.opensaml.xml.schema.XSAny) attr.getAttributeValues().get(0))
-                                    .getTextContent());
+            String attrName =
+                    attr.getFriendlyName() == null ? attr.getName() : attr.getFriendlyName();
+            String attrValue = "";
+            if (attr.getAttributeValues() != null && attr.getAttributeValues().size() > 0) {
+                XMLObject xmlValue = attr.getAttributeValues().get(0);
+                if (xmlValue instanceof XSAny) {
+                    attrValue = ((XSAny) xmlValue).getTextContent();
+                }
+                if (xmlValue instanceof XSString) {
+                    attrValue =
+                            ((XSString) xmlValue).getValue() != null
+                                    ? ((XSString) xmlValue).getValue()
+                                    : "";
+                    ;
+                }
+                if (xmlValue instanceof XSInteger) {
+                    attrValue =
+                            ((XSInteger) xmlValue).getValue() != null
+                                    ? ((XSInteger) xmlValue).getValue().toString()
+                                    : "";
+                }
+                if (xmlValue instanceof XSDateTime) {
+                    DateTimeFormatter formatter = ((XSDateTime) xmlValue).getDateTimeFormatter();
+                    attrValue =
+                            ((XSDateTime) xmlValue).getValue() != null
+                                    ? formatter.print(((XSDateTime) xmlValue).getValue())
+                                    : "";
+                    ;
+                }
+            }
+            user.getProperties().setProperty(attrName, attrValue);
         }
         user.setAuthorities(roles);
         return user;
